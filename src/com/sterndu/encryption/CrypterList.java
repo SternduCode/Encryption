@@ -64,7 +64,12 @@ public class CrypterList {
 						}
 
 						@Override
-						public void makeKey(byte[] data) { key = new SecretKeySpec(data, 0, 32, "AES"); }
+						public void makeKey(byte[] data) throws InvalidKeyException {
+							if (data.length != 32 && data.length != 16)
+								throw new InvalidKeyException("The key material that was supplied was of wrong length");
+							key = new SecretKeySpec(data, 0, 32, "AES");
+
+						}
 
 						@Override
 						public void makeSecondaryKey(byte[] data) {}
