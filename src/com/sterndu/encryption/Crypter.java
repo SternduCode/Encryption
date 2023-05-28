@@ -92,8 +92,9 @@ public abstract class Crypter {
 	 * Make key.
 	 *
 	 * @param data the data
+	 * @throws InvalidKeyException the invalid key exception
 	 */
-	public abstract void makeKey(byte[] data);
+	public abstract void makeKey(byte[] data) throws InvalidKeyException;
 
 	/**
 	 * Make secondary key.
