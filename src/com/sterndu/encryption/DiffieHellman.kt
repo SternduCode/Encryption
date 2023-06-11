@@ -1,82 +1,85 @@
-package com.sterndu.encryption;
+@file:JvmName("DiffieHellman")
+package com.sterndu.encryption
 
-import java.security.*;
-import java.security.spec.AlgorithmParameterSpec;
-import javax.crypto.*;
-import javax.crypto.interfaces.DHPublicKey;
+import java.security.InvalidAlgorithmParameterException
+import java.security.InvalidKeyException
+import java.security.KeyPairGenerator
+import java.security.NoSuchAlgorithmException
+import java.security.spec.AlgorithmParameterSpec
+import javax.crypto.KeyAgreement
+import javax.crypto.interfaces.DHPublicKey
 
-public class DiffieHellman {
+class DiffieHellman {
+	private lateinit var secret: ByteArray
+	private lateinit var ka: KeyAgreement
+	private lateinit var kpg: KeyPairGenerator
+	private lateinit var publicKey: DHPublicKey
 
-	private byte[] secret;
-	private KeyAgreement ka;
-	private KeyPairGenerator kpg;
-	private DHPublicKey publicKey;
-
-	// 0=No Handskate; 1=Doing Handshake; 2=Done Handshake;
-	private int handshake_state = 0;
-
-	private DHPublicKey newKey(Object... data) {
-		try {
-			if (handshake_state != 1) handshake_state=1;
-			ka=KeyAgreement.getInstance("DiffieHellman");
-			kpg= KeyPairGenerator.getInstance("DiffieHellman");
-			kpg.initialize(2048);
-			KeyPair keyPair=kpg.generateKeyPair();
-			ka.init(keyPair.getPrivate());
-			return (DHPublicKey) keyPair.getPublic();
-		} catch (InvalidKeyException | NoSuchAlgorithmException e) {
-			e.printStackTrace();
-			if (data.length == 0) return newKey(1);
-			return newKey((int) data[0] + 1);
+	// 0=No Handshake; 1=Doing Handshake; 2=Done Handshake;
+	private var handshakeState = 0
+	private fun newKey(vararg data: Any): DHPublicKey {
+		return try {
+			if (handshakeState != 1) handshakeState = 1
+			ka = KeyAgreement.getInstance("DiffieHellman")
+			kpg = KeyPairGenerator.getInstance("DiffieHellman")
+			kpg.initialize(2048)
+			val keyPair = kpg.generateKeyPair()
+			ka.init(keyPair.private)
+			keyPair.public as DHPublicKey
+		} catch (e: InvalidKeyException) {
+			e.printStackTrace()
+			if (data.isEmpty()) newKey(1) else newKey(data[0] as Int + 1)
+		} catch (e: NoSuchAlgorithmException) {
+			e.printStackTrace()
+			if (data.isEmpty()) newKey(1) else newKey(data[0] as Int + 1)
 		}
 	}
 
-	public void doPhase(DHPublicKey key,boolean last_phase) {
+	fun doPhase(key: DHPublicKey, lastPhase: Boolean) {
 		try {
-			ka.doPhase(key, last_phase);
-			if (last_phase) {
-				secret=ka.generateSecret();
-				handshake_state = 2;
+			ka.doPhase(key, lastPhase)
+			if (lastPhase) {
+				secret = ka.generateSecret()
+				handshakeState = 2
 			}
-		} catch (InvalidKeyException | IllegalStateException e) {
-			e.printStackTrace();
+		} catch (e: InvalidKeyException) {
+			e.printStackTrace()
+		} catch (e: IllegalStateException) {
+			e.printStackTrace()
 		}
 	}
 
-	public byte[] getSecret() {
-		if (handshake_state == 2) return secret;
-		return null;
+	fun getSecret(): ByteArray? {
+		return if (handshakeState == 2) secret else null
 	}
 
-	public DHPublicKey getPublicKey() {
-		return publicKey!=null?publicKey:(publicKey=newKey());
+	fun getPublicKey(): DHPublicKey {
+		return publicKey
 	}
 
-	public void initialize(AlgorithmParameterSpec params) throws InvalidAlgorithmParameterException {
-		if (handshake_state == 1) {
-			kpg.initialize(params);
+	@Throws(InvalidAlgorithmParameterException::class)
+	fun initialize(params: AlgorithmParameterSpec?) {
+		if (handshakeState == 1) {
+			kpg.initialize(params)
 			try {
-				KeyPair keyPair=kpg.generateKeyPair();
-				ka.init(keyPair.getPrivate());
-				publicKey=(DHPublicKey) keyPair.getPublic();
-			} catch (InvalidKeyException e) {
-				e.printStackTrace();
+				val keyPair = kpg.generateKeyPair()
+				ka.init(keyPair.private)
+				publicKey = keyPair.public as DHPublicKey
+			} catch (e: InvalidKeyException) {
+				e.printStackTrace()
 			}
 		}
 	}
 
-	public boolean isDoingHandshake() { return handshake_state == 1; }
+	val isDoingHandshake: Boolean
+		get() = handshakeState == 1
+	val isHandshakeDone: Boolean
+		get() = handshakeState == 2
 
-
-	public boolean isHandshakeDone() {
-		return handshake_state==2;
-	}
-
-	public void startHandshake() {
-		if (handshake_state!=1) {
-			handshake_state=1;
-			publicKey = newKey();
+	fun startHandshake() {
+		if (handshakeState != 1) {
+			handshakeState = 1
+			publicKey = newKey()
 		}
 	}
-
 }

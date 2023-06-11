@@ -1,44 +1,31 @@
-package com.sterndu.encryption;
+@file:JvmName("Crypter")
+package com.sterndu.encryption
 
-import java.security.*;
+import java.security.InvalidKeyException
+import java.security.Key
+import javax.crypto.Cipher
 
-import javax.crypto.*;
-
-
-// TODO: Auto-generated Javadoc
 /**
  * The Class Crypter.
  */
-public abstract class Crypter {
+abstract class Crypter protected constructor(private val algorithm: String) {
+	var cipher: Cipher
+		protected set
 
-	/** The algo. */
-	protected String algo;
+	var key: Key? = null
+		protected set
 
-	/** The c. */
-	protected Cipher c;
-
-	/** The secondary key. */
-	protected Key key, secondaryKey;
+	var secondaryKey: Key? = null
+		protected set
 
 	/**
 	 * Instantiates a new crypter.
-	 *
-	 * @param arg the arg
-	 * @throws NoSuchAlgorithmException the no such algorithm exception
-	 * @throws NoSuchPaddingException the no such padding exception
 	 */
-	protected Crypter(String arg) throws NoSuchAlgorithmException, NoSuchPaddingException {
-		c		= Cipher.getInstance(arg);
-		algo	= arg;
-		init();
+	init {
+		cipher = Cipher.getInstance(algorithm)
 	}
 
-	/**
-	 * Inits the.
-	 */
-	protected void init() {
-
-	}
+	fun getAlgorithm() : String = algorithm
 
 	/**
 	 * Decrypt.
@@ -46,7 +33,7 @@ public abstract class Crypter {
 	 * @param data the data
 	 * @return the byte[]
 	 */
-	public abstract byte[] decrypt(byte[] data);
+	abstract fun decrypt(data: ByteArray): ByteArray
 
 	/**
 	 * Encrypt.
@@ -54,39 +41,7 @@ public abstract class Crypter {
 	 * @param data the data
 	 * @return the byte[]
 	 */
-	public abstract byte[] encrypt(byte[] data);
-
-	/**
-	 * Gets the algorithm.
-	 *
-	 * @return the algorithm
-	 */
-	public String getAlgorithm() {
-		return algo;
-	}
-
-	/**
-	 * Gets the cipher.
-	 *
-	 * @return the cipher
-	 */
-	public Cipher getCipher() {
-		return c;
-	}
-
-	/**
-	 * Gets the key.
-	 *
-	 * @return the key
-	 */
-	public Key getKey() { return key; }
-
-	/**
-	 * Gets the secondary key.
-	 *
-	 * @return the secondary key
-	 */
-	public Key getSecondaryKey() { return secondaryKey; }
+	abstract fun encrypt(data: ByteArray): ByteArray
 
 	/**
 	 * Make key.
@@ -94,27 +49,13 @@ public abstract class Crypter {
 	 * @param data the data
 	 * @throws InvalidKeyException the invalid key exception
 	 */
-	public abstract void makeKey(byte[] data) throws InvalidKeyException;
+	@Throws(InvalidKeyException::class)
+	abstract fun makeKey(data: ByteArray)
 
 	/**
 	 * Make secondary key.
 	 *
 	 * @param data the data
 	 */
-	public abstract void makeSecondaryKey(byte[] data);
-
-	/**
-	 * Sets the key.
-	 *
-	 * @param key the new key
-	 */
-	public void setKey(Key key) { this.key = key; }
-
-	/**
-	 * Sets the secondary key.
-	 *
-	 * @param key the new secondary key
-	 */
-	public void setSecondaryKey(Key key) { secondaryKey = key; }
-
+	abstract fun makeSecondaryKey(data: ByteArray)
 }
