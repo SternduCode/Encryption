@@ -34,7 +34,7 @@ object EncryptionTest {
 	)
 	@JvmStatic
 	fun main(args: Array<String>) {
-		val f = File("./ff.txt")
+		val f = File("./ff.txt.enc")
 		val mpass = "FFSSecurePAsswortXDD"
 		val spec: KeySpec = PBEKeySpec(
 			mpass.toCharArray(), byteArrayOf(
