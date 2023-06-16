@@ -22,9 +22,13 @@ class DiffieHellman {
 			if (handshakeState != 1) handshakeState = 1
 			ka = KeyAgreement.getInstance("DiffieHellman")
 			kpg = KeyPairGenerator.getInstance("DiffieHellman")
+			if (System.getProperty("debug") == "true") println("A")
 			kpg.initialize(2048)
+			if (System.getProperty("debug") == "true") println("B")
 			val keyPair = kpg.generateKeyPair()
+			if (System.getProperty("debug") == "true") println("C")
 			ka.init(keyPair.private)
+			if (System.getProperty("debug") == "true") println("D")
 			keyPair.public as DHPublicKey
 		} catch (e: InvalidKeyException) {
 			e.printStackTrace()
