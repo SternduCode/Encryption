@@ -13,13 +13,14 @@ class DiffieHellman {
 	private lateinit var secret: ByteArray
 	private lateinit var ka: KeyAgreement
 	private lateinit var kpg: KeyPairGenerator
-	private lateinit var publicKey: DHPublicKey
+	lateinit var publicKey: DHPublicKey
+		private set
 
 	// 0=No Handshake; 1=Doing Handshake; 2=Done Handshake;
 	private var handshakeState = 0
 	private fun newKey(vararg data: Any): DHPublicKey {
 		return try {
-			if (handshakeState != 1) handshakeState = 1
+			if (!doingHandshake) handshakeState = 1
 			ka = KeyAgreement.getInstance("DiffieHellman")
 			kpg = KeyPairGenerator.getInstance("DiffieHellman")
 			if (System.getProperty("debug") == "true") println("A")
@@ -54,16 +55,12 @@ class DiffieHellman {
 	}
 
 	fun getSecret(): ByteArray? {
-		return if (handshakeState == 2) secret else null
-	}
-
-	fun getPublicKey(): DHPublicKey {
-		return publicKey
+		return if (handshakeDone) secret else null
 	}
 
 	@Throws(InvalidAlgorithmParameterException::class)
 	fun initialize(params: AlgorithmParameterSpec?) {
-		if (handshakeState == 1) {
+		if (doingHandshake) {
 			kpg.initialize(params)
 			try {
 				val keyPair = kpg.generateKeyPair()
@@ -75,13 +72,13 @@ class DiffieHellman {
 		}
 	}
 
-	val isDoingHandshake: Boolean
+	val doingHandshake: Boolean
 		get() = handshakeState == 1
-	val isHandshakeDone: Boolean
+	val handshakeDone: Boolean
 		get() = handshakeState == 2
 
 	fun startHandshake() {
-		if (handshakeState != 1) {
+		if (!doingHandshake) {
 			handshakeState = 1
 			publicKey = newKey()
 		}

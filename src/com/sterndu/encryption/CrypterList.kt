@@ -87,10 +87,11 @@ object CrypterList {
 						key = SecretKeySpec(data, 0, data.size, "AES")
 					}
 
-					override fun makeSecondaryKey(data: ByteArray) {}
+					override fun makeSecondaryKey(data: ByteArray) {} //In AES we dont need two Keys
 				}
 			}
 		} catch (_: Exception) {
+			println("AES not available")
 		}
 		try {
 			Cipher.getInstance("ChaCha20-Poly1305")
@@ -148,10 +149,11 @@ object CrypterList {
 						key = SecretKeySpec(data, 0, 32, "ChaCha20")
 					}
 
-					override fun makeSecondaryKey(data: ByteArray) {}
+					override fun makeSecondaryKey(data: ByteArray) {} //In ChaCha20 we dont need two Keys
 				}
 			}
 		} catch (_: Exception) {
+			println("ChaCha20 not available")
 		}
 	}
 }
