@@ -33,7 +33,7 @@ object CrypterList {
 	init {
 		try {
 			Cipher.getInstance("AES/GCM/NoPadding")
-			CrypterList.versions[1] = Supplier<Crypter> {
+			versions[1] = Supplier<Crypter> {
 				object : Crypter("AES/GCM/NoPadding") {
 					override fun decrypt(data: ByteArray): ByteArray {
 						if (key != null) try {
@@ -83,8 +83,8 @@ object CrypterList {
 
 					@Throws(InvalidKeyException::class)
 					override fun makeKey(data: ByteArray) {
-						if (data.size != 32 && data.size != 16) throw InvalidKeyException("The key material that was supplied was of wrong length")
-						key = SecretKeySpec(data, 0, data.size, "AES")
+						if (data.size < 16) throw InvalidKeyException("The key material that was supplied was of wrong length")
+						key = SecretKeySpec(data, 0, when { data.size >= 32 -> 32; data.size >= 24 -> 24; else -> 16 }, "AES")
 					}
 
 					override fun makeSecondaryKey(data: ByteArray) {} //In AES we dont need two Keys
@@ -95,7 +95,7 @@ object CrypterList {
 		}
 		try {
 			Cipher.getInstance("ChaCha20-Poly1305")
-			CrypterList.versions[20] = Supplier<Crypter> {
+			versions[20] = Supplier<Crypter> {
 				object : Crypter("ChaCha20-Poly1305") {
 					override fun decrypt(data: ByteArray): ByteArray {
 						if (key != null) try {
@@ -145,7 +145,7 @@ object CrypterList {
 
 					@Throws(InvalidKeyException::class)
 					override fun makeKey(data: ByteArray) {
-						if (data.size != 32) throw InvalidKeyException("The key material that was supplied was of wrong length")
+						if (data.size < 32) throw InvalidKeyException("The key material that was supplied was of wrong length")
 						key = SecretKeySpec(data, 0, 32, "ChaCha20")
 					}
 
