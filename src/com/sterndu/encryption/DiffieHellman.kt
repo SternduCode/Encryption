@@ -24,7 +24,7 @@ class DiffieHellman {
 			ka = KeyAgreement.getInstance("DiffieHellman")
 			kpg = KeyPairGenerator.getInstance("DiffieHellman")
 			if (System.getProperty("debug") == "true") println("A")
-			kpg.initialize(2048)
+			kpg.initialize(512)
 			if (System.getProperty("debug") == "true") println("B")
 			val keyPair = kpg.generateKeyPair()
 			if (System.getProperty("debug") == "true") println("C")
