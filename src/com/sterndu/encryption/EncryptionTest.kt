@@ -1,9 +1,7 @@
 @file:JvmName("EncryptionTest")
 package com.sterndu.encryption
 
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
+import java.io.*
 import java.nio.file.Files
 import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
@@ -35,9 +33,9 @@ object EncryptionTest {
 	@JvmStatic
 	fun main(args: Array<String>) {
 		val f = File("./ff.txt.enc")
-		val mpass = "FFSSecurePAsswortXDD"
+		val password = "FFSSecurePasswordXDD"
 		val spec: KeySpec = PBEKeySpec(
-			mpass.toCharArray(), byteArrayOf(
+			password.toCharArray(), byteArrayOf(
 				1, 2, 3
 			), 65536, 256
 		) // AES-256

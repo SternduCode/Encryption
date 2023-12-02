@@ -3,17 +3,11 @@ package com.sterndu.encryption
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.security.InvalidAlgorithmParameterException
-import java.security.InvalidKeyException
-import java.security.SecureRandom
+import java.security.*
 import java.util.*
 import java.util.function.Supplier
-import javax.crypto.BadPaddingException
-import javax.crypto.Cipher
-import javax.crypto.IllegalBlockSizeException
-import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
+import javax.crypto.*
+import javax.crypto.spec.*
 
 /**
  * The Class CrypterList.
@@ -87,7 +81,7 @@ object CrypterList {
 						key = SecretKeySpec(data, 0, when { data.size >= 32 -> 32; data.size >= 24 -> 24; else -> 16 }, "AES")
 					}
 
-					override fun makeSecondaryKey(data: ByteArray) {} //In AES we dont need two Keys
+					override fun makeSecondaryKey(data: ByteArray) {} //In AES we don't need two Keys
 				}
 			}
 		} catch (_: Exception) {
@@ -149,7 +143,7 @@ object CrypterList {
 						key = SecretKeySpec(data, 0, 32, "ChaCha20")
 					}
 
-					override fun makeSecondaryKey(data: ByteArray) {} //In ChaCha20 we dont need two Keys
+					override fun makeSecondaryKey(data: ByteArray) {} //In ChaCha20 we don't need two Keys
 				}
 			}
 		} catch (_: Exception) {
