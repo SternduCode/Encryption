@@ -23,35 +23,16 @@ abstract class Crypter protected constructor(private val algorithm: String) {
 
 	fun getAlgorithm() : String = algorithm
 
-	/**
-	 * Decrypt.
-	 *
-	 * @param data the data
-	 * @return the byte[]
-	 */
+	abstract fun shouldGetANewKey(): Boolean
+
 	abstract fun decrypt(data: ByteArray): ByteArray
 
-	/**
-	 * Encrypt.
-	 *
-	 * @param data the data
-	 * @return the byte[]
-	 */
 	abstract fun encrypt(data: ByteArray): ByteArray
 
-	/**
-	 * Make key.
-	 *
-	 * @param data the data
-	 * @throws InvalidKeyException the invalid key exception
-	 */
 	@Throws(InvalidKeyException::class)
 	abstract fun makeKey(data: ByteArray)
 
-	/**
-	 * Make secondary key.
-	 *
-	 * @param data the data
-	 */
-	abstract fun makeSecondaryKey(data: ByteArray)
+	@Throws(InvalidKeyException::class)
+	open fun makeSecondaryKey(data: ByteArray) {}   // default implementation. As many algorithms (i.e. symmetric algorithms) don't need two keys,
+													// we leave it empty but still provide it
 }
