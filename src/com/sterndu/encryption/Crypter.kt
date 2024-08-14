@@ -5,9 +5,6 @@ import java.security.InvalidKeyException
 import java.security.Key
 import javax.crypto.Cipher
 
-/**
- * The Class Crypter.
- */
 abstract class Crypter protected constructor(private val algorithm: String) {
 	var cipher: Cipher
 		protected set
@@ -18,9 +15,8 @@ abstract class Crypter protected constructor(private val algorithm: String) {
 	var secondaryKey: Key? = null
 		protected set
 
-	/**
-	 * Instantiates a new crypter.
-	 */
+	abstract fun getKeySize(): Int
+
 	init {
 		cipher = Cipher.getInstance(algorithm)
 	}
