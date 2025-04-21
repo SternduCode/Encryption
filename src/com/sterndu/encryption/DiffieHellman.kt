@@ -1,56 +1,71 @@
 @file:JvmName("DiffieHellman")
 package com.sterndu.encryption
 
-import java.security.InvalidAlgorithmParameterException
-import java.security.InvalidKeyException
-import java.security.KeyPairGenerator
-import java.security.NoSuchAlgorithmException
-import java.security.spec.AlgorithmParameterSpec
+import com.sterndu.encryption.DiffieHellman.HandshakeState.*
+import com.sterndu.multicore.LoggingUtil
+import java.security.*
+import java.security.spec.NamedParameterSpec
+import java.util.logging.Level
+import java.util.logging.Logger
 import javax.crypto.KeyAgreement
-import javax.crypto.interfaces.DHPublicKey
 
 class DiffieHellman {
-	private lateinit var secret: ByteArray
-	private lateinit var ka: KeyAgreement
-	private lateinit var kpg: KeyPairGenerator
-	lateinit var publicKey: DHPublicKey
+
+	enum class HandshakeState {
+		UNINITIALIZED,
+		IN_PROGRESS,
+		DONE;
+	}
+
+	private var logger: Logger = LoggingUtil.getLogger(DIFFIE_HELLMAN)
+	private var secret = ByteArray(0)
+	private var keyAgreement: KeyAgreement? = null
+	private var keyPairGenerator: KeyPairGenerator? = null
+	var publicKey: PublicKey? = null
 		private set
 
 	// 0=No Handshake; 1=Doing Handshake; 2=Done Handshake;
-	private var handshakeState = 0
-	private fun newKey(vararg data: Any): DHPublicKey {
+	private var handshakeState = UNINITIALIZED
+	private fun newKey(vararg data: Any) {
 		return try {
-			if (!doingHandshake) handshakeState = 1
-			ka = KeyAgreement.getInstance("DiffieHellman")
-			kpg = KeyPairGenerator.getInstance("DiffieHellman")
+			if (!doingHandshake) handshakeState = IN_PROGRESS
+			val keyAgreement: KeyAgreement = KeyAgreement.getInstance("X25519")
+			val keyPairGenerator: KeyPairGenerator = KeyPairGenerator.getInstance("XDH")
 			if (System.getProperty("debug") == "true") println("A")
-			kpg.initialize(512)
+			keyPairGenerator.initialize(NamedParameterSpec("X25519"))
 			if (System.getProperty("debug") == "true") println("B")
-			val keyPair = kpg.generateKeyPair()
+			val keyPair = keyPairGenerator.generateKeyPair()
 			if (System.getProperty("debug") == "true") println("C")
-			ka.init(keyPair.private)
+			keyAgreement.init(keyPair.private)
 			if (System.getProperty("debug") == "true") println("D")
-			keyPair.public as DHPublicKey
+			this.keyAgreement = keyAgreement
+			this.keyPairGenerator = keyPairGenerator
+			publicKey = keyPair.public
 		} catch (e: InvalidKeyException) {
-			e.printStackTrace()
+			logger.log(Level.WARNING, DIFFIE_HELLMAN, e)
 			if (data.isEmpty()) newKey(1) else newKey(data[0] as Int + 1)
 		} catch (e: NoSuchAlgorithmException) {
-			e.printStackTrace()
+			logger.log(Level.WARNING, DIFFIE_HELLMAN, e)
 			if (data.isEmpty()) newKey(1) else newKey(data[0] as Int + 1)
 		}
 	}
 
-	fun doPhase(key: DHPublicKey, lastPhase: Boolean) {
+	fun doPhase(key: PublicKey, lastPhase: Boolean) {
+		val keyAgreement = keyAgreement
+		if (keyAgreement == null) {
+			logger.log(Level.WARNING, DIFFIE_HELLMAN, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
+			return
+		}
 		try {
-			ka.doPhase(key, lastPhase)
+			keyAgreement.doPhase(key, lastPhase)
 			if (lastPhase) {
-				secret = ka.generateSecret()
-				handshakeState = 2
+				secret = keyAgreement.generateSecret()
+				handshakeState = DONE
 			}
 		} catch (e: InvalidKeyException) {
-			e.printStackTrace()
+			logger.log(Level.WARNING, DIFFIE_HELLMAN, e)
 		} catch (e: IllegalStateException) {
-			e.printStackTrace()
+			logger.log(Level.WARNING, DIFFIE_HELLMAN, e)
 		}
 	}
 
@@ -58,29 +73,18 @@ class DiffieHellman {
 		return if (handshakeDone) secret else null
 	}
 
-	@Throws(InvalidAlgorithmParameterException::class)
-	fun initialize(params: AlgorithmParameterSpec?) {
-		if (doingHandshake) {
-			kpg.initialize(params)
-			try {
-				val keyPair = kpg.generateKeyPair()
-				ka.init(keyPair.private)
-				publicKey = keyPair.public as DHPublicKey
-			} catch (e: InvalidKeyException) {
-				e.printStackTrace()
-			}
-		}
-	}
-
 	val doingHandshake: Boolean
-		get() = handshakeState == 1
+		get() = handshakeState == IN_PROGRESS
 	val handshakeDone: Boolean
-		get() = handshakeState == 2
+		get() = handshakeState == DONE
 
 	fun startHandshake() {
 		if (!doingHandshake) {
-			handshakeState = 1
-			publicKey = newKey()
+			newKey()
 		}
+	}
+
+	companion object {
+		const val DIFFIE_HELLMAN = "Diffie Hellman"
 	}
 }
