@@ -2,12 +2,13 @@
 package com.sterndu.encryption
 
 import java.io.*
+import java.net.InetSocketAddress
+import java.nio.channels.SocketChannel
 import java.nio.file.Files
 import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
 import java.security.spec.InvalidKeySpecException
 import java.security.spec.KeySpec
-import java.util.*
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
@@ -41,7 +42,7 @@ object EncryptionTest {
 		) // AES-256
 		val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
 		val key = secretKeyFactory.generateSecret(spec).encoded
-		val crypter = CrypterList.getByVersion(1)!!
+		val crypter = CrypterProvider.getCrypterByCode(10)!!
 		crypter.makeKey(key)
 		if (!f.exists()) {
 			f.createNewFile()
@@ -53,7 +54,15 @@ object EncryptionTest {
 		var data = Files.readAllBytes(f.toPath())
 		data = crypter.decrypt(data)
 		println(data.size)
-		println(Arrays.toString(data))
+		println(data.contentToString())
 		println(String(data))
+
+		SocketChannel.open().apply {
+			configureBlocking(false)
+			connect(InetSocketAddress("lin.sterndu.com", 55601))
+			finishConnect()
+
+		}
+
 	}
 }
