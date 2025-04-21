@@ -1,11 +1,15 @@
 @file:JvmName("Crypter")
 package com.sterndu.encryption
 
+import com.sterndu.multicore.LoggingUtil
 import java.security.InvalidKeyException
 import java.security.Key
 import javax.crypto.Cipher
 
-abstract class Crypter protected constructor(private val algorithm: String) {
+abstract class Crypter protected constructor(val algorithm: String) {
+
+	protected val logger = LoggingUtil.getLogger("Crypter $algorithm")
+
 	var cipher: Cipher
 		protected set
 
@@ -17,11 +21,11 @@ abstract class Crypter protected constructor(private val algorithm: String) {
 
 	abstract fun getKeySize(): Int
 
+	open fun getSecondKeySize(): Int = 0
+
 	init {
 		cipher = Cipher.getInstance(algorithm)
 	}
-
-	fun getAlgorithm() : String = algorithm
 
 	abstract fun shouldGetANewKey(): Boolean
 
@@ -34,5 +38,5 @@ abstract class Crypter protected constructor(private val algorithm: String) {
 
 	@Throws(InvalidKeyException::class)
 	open fun makeSecondaryKey(data: ByteArray) {}   // default implementation. As many algorithms (i.e. symmetric algorithms) don't need two keys,
-													// we leave it empty but still provide it
+													// we leave it empty but still provide it, as it might be useful for hybrid encryption algorithms.
 }
