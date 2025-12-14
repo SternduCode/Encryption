@@ -12,7 +12,7 @@ object CrypterProvider {
 
 		if (algorithms.contains("AES/GCM/NOPADDING")) {
 			it[1] = {
-				IvCrypter(
+				SymmetricIvCrypter(
 					"AES/GCM/NoPadding",
 					"AES",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead
@@ -25,7 +25,7 @@ object CrypterProvider {
 			}
 		} else if (algorithms.contains("AES_128/GCM/NOPADDING")) {
 			it[1] = {
-				IvCrypter(
+				SymmetricIvCrypter(
 					"AES_128/GCM/NoPadding",
 					"AES",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead
@@ -39,7 +39,7 @@ object CrypterProvider {
 		}
 		if (algorithms.contains("AES_256/GCM/NOPADDING")) {
 			it[10] = {
-				IvCrypter(
+				SymmetricIvCrypter(
 					"AES_256/GCM/NoPadding",
 					"",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead
@@ -53,7 +53,7 @@ object CrypterProvider {
 		}
 		if (algorithms.contains("CHACHA20-POLY1305")) {
 			it[20] = {
-				IvCrypter(
+				SymmetricIvCrypter(
 					"ChaCha20-Poly1305",
 					"ChaCha20",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead

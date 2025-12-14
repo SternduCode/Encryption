@@ -13,7 +13,7 @@ import javax.crypto.Cipher
 import javax.crypto.IllegalBlockSizeException
 import javax.crypto.spec.SecretKeySpec
 
-open class IvCrypter(algorithm: String, val keyAlgorithm: String, MAX_ENCRYPTIONS: UInt, MAX_DATA: Long, keySize: Int, val parameterSpecFromIv: (ByteArray) -> AlgorithmParameterSpec):
+open class SymmetricIvCrypter(algorithm: String, val keyAlgorithm: String, MAX_ENCRYPTIONS: UInt, MAX_DATA: Long, keySize: Int, val parameterSpecFromIv: (ByteArray) -> AlgorithmParameterSpec):
     Crypter(algorithm, MAX_ENCRYPTIONS, MAX_DATA, keySize) {
 
     @Synchronized
