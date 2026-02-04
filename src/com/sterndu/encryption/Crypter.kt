@@ -6,7 +6,7 @@ import java.security.InvalidKeyException
 import java.security.Key
 import javax.crypto.Cipher
 
-abstract class Crypter protected constructor(val algorithm: String, val MAX_ENCRYPTIONS: UInt, val MAX_DATA: Long, val keySize: Int) {
+abstract class Crypter protected constructor(val algorithm: String, val maxEncryptions: UInt, val maxData: ULong, val keySize: Int) {
 
 	protected val logger = LoggingUtil.getLogger("Crypter $algorithm")
 
@@ -22,7 +22,7 @@ abstract class Crypter protected constructor(val algorithm: String, val MAX_ENCR
 	var encryptions = 0u
 		protected set
 
-	var encryptedData = 0L
+	var encryptedData = 0UL
 		protected set
 
 	open fun getSecondKeySize(): Int = 0
@@ -31,7 +31,7 @@ abstract class Crypter protected constructor(val algorithm: String, val MAX_ENCR
 		cipher = Cipher.getInstance(algorithm)
 	}
 
-	open fun shouldGetANewKey(): Boolean = encryptions >= MAX_ENCRYPTIONS || encryptedData >= MAX_DATA
+	open fun shouldGetANewKey(): Boolean = encryptions >= maxEncryptions || encryptedData >= maxData
 
 	abstract fun decrypt(data: ByteArray): ByteArray
 

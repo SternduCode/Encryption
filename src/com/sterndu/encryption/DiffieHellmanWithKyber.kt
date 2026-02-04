@@ -12,11 +12,11 @@ import javax.crypto.KeyAgreement
 import javax.crypto.SecretKey
 import javax.crypto.spec.HKDFParameterSpec
 
-enum class KeyberSecurityPerformanceBalance(val parameterSpecName: String, val cipertextSize: Int) {
+enum class KyberSecurityPerformanceBalance(val parameterSpecName: String, val cipertextSize: Int) {
     Performance("ML-KEM-512", 768), Balanced("ML-KEM-768", 1088), Security("ML-KEM-1024", 1568)
 }
 
-class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KeyberSecurityPerformanceBalance) {
+class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityPerformanceBalance) {
 
     enum class HandshakeState {
         UNINITIALIZED,

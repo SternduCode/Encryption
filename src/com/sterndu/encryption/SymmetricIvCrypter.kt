@@ -13,8 +13,14 @@ import javax.crypto.Cipher
 import javax.crypto.IllegalBlockSizeException
 import javax.crypto.spec.SecretKeySpec
 
-open class SymmetricIvCrypter(algorithm: String, val keyAlgorithm: String, MAX_ENCRYPTIONS: UInt, MAX_DATA: Long, keySize: Int, val parameterSpecFromIv: (ByteArray) -> AlgorithmParameterSpec):
-    Crypter(algorithm, MAX_ENCRYPTIONS, MAX_DATA, keySize) {
+open class SymmetricIvCrypter(
+    algorithm: String,
+    val keyAlgorithm: String,
+    maxEncryptions: UInt,
+    maxData: ULong,
+    keySize: Int,
+    val parameterSpecFromIv: (ByteArray) -> AlgorithmParameterSpec
+): Crypter(algorithm, maxEncryptions, maxData, keySize) {
 
     @Synchronized
     override fun decrypt(data: ByteArray): ByteArray {
@@ -34,7 +40,7 @@ open class SymmetricIvCrypter(algorithm: String, val keyAlgorithm: String, MAX_E
                 .also {
                     synchronized(this) {
                         encryptions++
-                        encryptedData += it.size
+                        encryptedData += it.size.toUInt()
                     }
                 }
         } catch (e: InvalidKeyException) {
@@ -65,7 +71,7 @@ open class SymmetricIvCrypter(algorithm: String, val keyAlgorithm: String, MAX_E
                 .also {
                     synchronized(this) {
                         encryptions++
-                        encryptedData += data.size
+                        encryptedData += data.size.toUInt()
                     }
 //					println("IV Size: " + iv.size)
 //					println("IV: " + iv.contentToString())

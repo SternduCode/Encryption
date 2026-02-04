@@ -16,26 +16,24 @@ object CrypterProvider {
 					"AES/GCM/NoPadding",
 					"AES",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead
-					2.0.pow(35).toLong(), // 32 GiB b/c 64 GiB is the maximum
+					2.0.pow(35).toULong(), // 32 GiB b/c 64 GiB is the maximum
 					16,
-					{ iv ->
-						GCMParameterSpec(128, iv)
-					},
-				)
-			}
+                ) { iv ->
+                    GCMParameterSpec(128, iv)
+                }
+            }
 		} else if (algorithms.contains("AES_128/GCM/NOPADDING")) {
 			it[1] = {
 				SymmetricIvCrypter(
 					"AES_128/GCM/NoPadding",
 					"AES",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead
-					2.0.pow(35).toLong(), // 32 GiB b/c 64 GiB is the maximum
+					2.0.pow(35).toULong(), // 32 GiB b/c 64 GiB is the maximum
 					16,
-					{ iv ->
-						GCMParameterSpec(128, iv)
-					},
-				)
-			}
+                ) { iv ->
+                    GCMParameterSpec(128, iv)
+                }
+            }
 		}
 		if (algorithms.contains("AES_256/GCM/NOPADDING")) {
 			it[10] = {
@@ -43,13 +41,12 @@ object CrypterProvider {
 					"AES_256/GCM/NoPadding",
 					"",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead
-					2.0.pow(35).toLong(), // 32 GiB b/c 64 GiB is the maximum
+					2.0.pow(35).toULong(), // 32 GiB b/c 64 GiB is the maximum
 					32,
-					{ iv ->
-						GCMParameterSpec(128, iv)
-					},
-				)
-			}
+                ) { iv ->
+                    GCMParameterSpec(128, iv)
+                }
+            }
 		}
 		if (algorithms.contains("CHACHA20-POLY1305")) {
 			it[20] = {
@@ -57,13 +54,12 @@ object CrypterProvider {
 					"ChaCha20-Poly1305",
 					"ChaCha20",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead
-					2.0.pow(37).toLong(), // 128 GiB b/c 256 GiB is the maximum
+					2.0.pow(37).toULong(), // 128 GiB b/c 256 GiB is the maximum
 					32,
-					{ nonce ->
-						IvParameterSpec(nonce)
-					},
-				)
-			}
+                ) { nonce ->
+                    IvParameterSpec(nonce)
+                }
+            }
 		}
 	}
 
