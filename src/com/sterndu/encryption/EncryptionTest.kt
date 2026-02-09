@@ -1,7 +1,9 @@
 @file:JvmName("EncryptionTest")
 package com.sterndu.encryption
 
-import java.io.*
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.nio.channels.SocketChannel
 import java.nio.file.Files
@@ -46,13 +48,13 @@ object EncryptionTest {
 		crypter.makeKey(key)
 		if (!f.exists()) {
 			f.createNewFile()
-			val data = crypter.encrypt("Hello World! FFS".toByteArray(Charsets.UTF_8))
+			val data = crypter.encrypt("Hello World! FFS".toByteArray(Charsets.UTF_8)) { ByteArray(0) }
 			val fos = FileOutputStream(f)
 			fos.write(data)
 			fos.close()
 		}
 		var data = Files.readAllBytes(f.toPath())
-		data = crypter.decrypt(data)
+		data = crypter.decrypt(data) { ByteArray(0) }
 		println(data.size)
 		println(data.contentToString())
 		println(String(data))
