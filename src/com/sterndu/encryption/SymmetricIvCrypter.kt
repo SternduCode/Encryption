@@ -23,11 +23,12 @@ open class SymmetricIvCrypter(
 ): Crypter(algorithm, maxEncryptions, maxData, keySize) {
 
     @Synchronized
-    override fun decrypt(data: ByteArray): ByteArray {
+    override fun decrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray {
         if (key != null) try {
             val byteBuffer = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN)
             val length = byteBuffer.getInt()
             //println("IV Size: $length")
+            if (length != 12) return ByteArray(0)
             val iv = ByteArray(length)
             byteBuffer[iv]
             //println("IV: ${iv.contentToString()}")
@@ -36,6 +37,8 @@ open class SymmetricIvCrypter(
             byteBuffer[newData]
             //println("Data: ${newData.size}  ${newData.contentToString()}")
             cipher.init(Cipher.DECRYPT_MODE, key, params)
+            cipher.updateAAD(aadData())
+            cipher.updateAAD(iv)
             return cipher.doFinal(newData)
                 .also {
                     synchronized(this) {
@@ -56,11 +59,13 @@ open class SymmetricIvCrypter(
     }
 
     @Synchronized
-    override fun encrypt(data: ByteArray): ByteArray {
+    override fun encrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray {
         if (key != null) try {
             val iv = ByteArray(12)
             SecureRandom().nextBytes(iv)
             cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpecFromIv(iv))
+            cipher.updateAAD(aadData())
+            cipher.updateAAD(iv)
             val newData = cipher.doFinal(data)
             return ByteBuffer.allocate(4 + iv.size + newData.size)
                 .order(ByteOrder.BIG_ENDIAN)

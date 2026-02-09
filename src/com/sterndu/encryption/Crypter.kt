@@ -33,9 +33,9 @@ abstract class Crypter protected constructor(val algorithm: String, val maxEncry
 
 	open fun shouldGetANewKey(): Boolean = encryptions >= maxEncryptions || encryptedData >= maxData
 
-	abstract fun decrypt(data: ByteArray): ByteArray
+	abstract fun decrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray
 
-	abstract fun encrypt(data: ByteArray): ByteArray
+	abstract fun encrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray
 
 	@Throws(InvalidKeyException::class)
 	abstract fun makeKey(data: ByteArray)
