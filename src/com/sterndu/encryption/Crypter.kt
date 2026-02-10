@@ -22,6 +22,9 @@ abstract class Crypter protected constructor(val algorithm: String, val maxEncry
 	var encryptions = 0u
 		protected set
 
+	var decryptions = 0u
+		protected set
+
 	var encryptedData = 0UL
 		protected set
 
@@ -31,7 +34,7 @@ abstract class Crypter protected constructor(val algorithm: String, val maxEncry
 		cipher = Cipher.getInstance(algorithm)
 	}
 
-	open fun shouldGetANewKey(): Boolean = encryptions >= maxEncryptions || encryptedData >= maxData
+	open fun shouldGetANewKey(): Boolean = encryptions >= maxEncryptions || decryptions >= maxEncryptions || encryptedData >= maxData
 
 	abstract fun decrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray
 

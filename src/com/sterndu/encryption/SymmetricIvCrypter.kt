@@ -42,7 +42,7 @@ open class SymmetricIvCrypter(
             return cipher.doFinal(newData)
                 .also {
                     synchronized(this) {
-                        encryptions++
+                        decryptions++
                         encryptedData += it.size.toUInt()
                     }
                 }
