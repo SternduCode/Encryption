@@ -22,15 +22,20 @@ open class SymmetricIvCrypter(
     val parameterSpecFromIv: (ByteArray) -> AlgorithmParameterSpec
 ): Crypter(algorithm, maxEncryptions, maxData, keySize) {
 
+    private var ivPrefix: ByteArray = ByteArray(0)
+
     @Synchronized
     override fun decrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray {
         if (key != null) try {
             val byteBuffer = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN)
             val length = byteBuffer.getInt()
             //println("IV Size: $length")
-            if (length != 12) return ByteArray(0)
-            val iv = ByteArray(length)
-            byteBuffer[iv]
+            if (length != 4) return ByteArray(0)
+            val iv = ByteArray(12)
+            byteBuffer[iv, 0, length]
+            ByteBuffer.wrap(iv)
+                .order(ByteOrder.BIG_ENDIAN)
+                .putInt(4, decryptions.toInt())
             //println("IV: ${iv.contentToString()}")
             val params = parameterSpecFromIv(iv)
             val newData = ByteArray(byteBuffer.remaining())
@@ -62,15 +67,16 @@ open class SymmetricIvCrypter(
     override fun encrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray {
         if (key != null) try {
             val iv = ByteArray(12)
-            SecureRandom().nextBytes(iv)
+            ByteBuffer.wrap(iv)
+                .order(ByteOrder.BIG_ENDIAN)
+                .put(ivPrefix)
+                .putInt(encryptions.toInt())
             cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpecFromIv(iv))
             cipher.updateAAD(aadData())
             cipher.updateAAD(iv)
             val newData = cipher.doFinal(data)
-            return ByteBuffer.allocate(4 + iv.size + newData.size)
-                .order(ByteOrder.BIG_ENDIAN)
-                .putInt(iv.size)
-                .put(iv)
+            return allocateByteBuffer(ivPrefix.packingSizeWithLength + newData.packingSize)
+                .putByteArrayWithLength(ivPrefix)
                 .put(newData)
                 .array()
                 .also {
@@ -98,6 +104,12 @@ open class SymmetricIvCrypter(
     override fun makeKey(data: ByteArray) {
         if (data.size < keySize) throw InvalidKeyException("The key material that was supplied has too few bytes")
         key = SecretKeySpec(data, 0, keySize, keyAlgorithm)
+        ivPrefix = ByteArray(4).also {
+            SecureRandom().nextBytes(it)
+        }
+        encryptions = 0u
+        decryptions = 0u
+        encryptedData = 0u
     }
 
 }

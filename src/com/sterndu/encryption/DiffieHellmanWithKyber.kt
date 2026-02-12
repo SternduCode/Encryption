@@ -5,6 +5,7 @@ import com.sterndu.multicore.LoggingUtil
 import java.security.*
 import java.security.spec.NamedParameterSpec
 import java.util.logging.Level.WARNING
+import java.util.logging.Level
 import java.util.logging.Logger
 import javax.crypto.KDF
 import javax.crypto.KEM
