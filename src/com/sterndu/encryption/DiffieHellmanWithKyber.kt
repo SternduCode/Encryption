@@ -4,7 +4,7 @@ import com.sterndu.encryption.DiffieHellman.HandshakeState.*
 import com.sterndu.multicore.LoggingUtil
 import java.security.*
 import java.security.spec.NamedParameterSpec
-import java.util.logging.Level
+import java.util.logging.Level.WARNING
 import java.util.logging.Logger
 import javax.crypto.KDF
 import javax.crypto.KEM
@@ -28,6 +28,7 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
     private var secretDH = ByteArray(0)
     private var secretKyber: SecretKey? = null
     private var keyAgreementDH: KeyAgreement? = null
+    private var decapsulatorKyber: KEM.Decapsulator? = null
     var publicKeyDH: PublicKey? = null
         private set
     var publicKeyKyber: PublicKey? = null
@@ -99,9 +100,9 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
                 handshakeState = DONE
             }
         } catch (e: InvalidKeyException) {
-            logger.log(Level.WARNING, DIFFIE_HELLMAN_WITH_KYBER, e)
+            logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, e)
         } catch (e: IllegalStateException) {
-            logger.log(Level.WARNING, DIFFIE_HELLMAN_WITH_KYBER, e)
+            logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, e)
         }
     }
 
