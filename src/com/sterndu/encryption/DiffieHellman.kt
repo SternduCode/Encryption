@@ -28,21 +28,27 @@ class DiffieHellman: KeyExchange() {
 	/**
 	 * Produces an output only if the handshake gets initialized during this function call
 	 */
-	fun doPhase(keyData: ByteArray, lastPhase: Boolean): ByteArray? {
-		val keyAgreement = keyAgreement
-		val sessionHash = sessionHash
-		val result = if (!doingHandshake) {
-			startHandshake()
-		} else {
-			ByteArray(0)
-		}
-		if (keyAgreement == null || sessionHash == null) {
-			logger.log(WARNING, DIFFIE_HELLMAN, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
-			reset()
-			return null
-		}
+	fun doPhase(keyData: ByteArray, lastPhase: Boolean, aad: ByteArray = ByteArray(0)): ByteArray? {
 		try {
+			if (sessionHash == null) {
+				sessionHash = MessageDigest.getInstance("SHA-256")
+			}
+			val sessionHash = sessionHash ?: return null
 			sessionHash.update(keyData)
+			updateAdditionalAuthenticatedData(aad)
+			val result = if (!doingHandshake) {
+				startHandshake()
+			} else {
+				ByteArray(0)
+			}
+			val keyAgreement = keyAgreement
+
+			if (keyAgreement == null) {
+				logger.log(WARNING, DIFFIE_HELLMAN, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
+				reset()
+				return null
+			}
+
 			val kf = KeyFactory.getInstance("X25519")
 			val key = kf.generatePublic(X509EncodedKeySpec(keyData))
 			keyAgreement.doPhase(key, lastPhase)
@@ -50,7 +56,6 @@ class DiffieHellman: KeyExchange() {
 				handshakeState = DONE
 			}
 			return result
-				.also { sessionHash.update(it) }
 		} catch (e: InvalidKeyException) {
 			logger.log(WARNING, DIFFIE_HELLMAN, e)
 			reset()
@@ -61,8 +66,8 @@ class DiffieHellman: KeyExchange() {
 		return null
 	}
 
-	override fun doPhase(data: ByteArray): ByteArray? {
-		return doPhase(data, true)
+	override fun doPhase(data: ByteArray, aad: ByteArray): ByteArray? {
+		return doPhase(data, true, aad)
 	}
 
 	override fun getSecret(data: ByteArray): ByteArray? {
@@ -99,8 +104,8 @@ class DiffieHellman: KeyExchange() {
 				this.keyAgreement = keyAgreement
 				publicKey = keyPair.public
 				val pubKeyEnc = keyPair.public.encoded
-				return allocateByteBuffer(pubKeyEnc.packingSizeWithLength)
-					.putByteArrayWithLength(pubKeyEnc)
+				return allocateByteBuffer(pubKeyEnc.packingSize)
+					.put(pubKeyEnc)
 					.array()
 					.also { sessionHash!!.update(it) }
 			} catch (e: InvalidKeyException) {

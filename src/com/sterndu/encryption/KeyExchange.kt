@@ -19,7 +19,7 @@ abstract class KeyExchange {
 
     abstract fun startHandshake(): ByteArray?
 
-    abstract fun doPhase(data: ByteArray): ByteArray?
+    abstract fun doPhase(data: ByteArray, aad: ByteArray = ByteArray(0)): ByteArray?
 
     abstract fun getSecret(data: ByteArray): ByteArray?
 
