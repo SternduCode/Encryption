@@ -67,7 +67,6 @@ class DiffieHellman: KeyExchange() {
 
 	override fun getSecret(data: ByteArray): ByteArray? {
 		return if (handshakeDone) {
-			// TODO use hkdf
 			val sessionHash = sessionHash
 			val secret = keyAgreement?.generateSecret()
 			if (sessionHash == null || secret == null) {
