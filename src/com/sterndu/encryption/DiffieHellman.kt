@@ -1,87 +1,132 @@
 @file:JvmName("DiffieHellman")
 package com.sterndu.encryption
 
-import com.sterndu.encryption.DiffieHellman.HandshakeState.*
+import com.sterndu.encryption.DiffieHellmanWithKyber.Companion.DIFFIE_HELLMAN_WITH_KYBER
+import com.sterndu.encryption.KeyExchange.HandshakeState.*
 import com.sterndu.multicore.LoggingUtil
 import java.security.*
 import java.security.spec.NamedParameterSpec
-import java.util.logging.Level
+import java.security.spec.X509EncodedKeySpec
+import java.util.logging.Level.SEVERE
+import java.util.logging.Level.WARNING
 import java.util.logging.Logger
+import javax.crypto.KDF
 import javax.crypto.KeyAgreement
+import javax.crypto.spec.HKDFParameterSpec
 
-class DiffieHellman {
+class DiffieHellman: KeyExchange() {
 
-	enum class HandshakeState {
-		UNINITIALIZED,
-		IN_PROGRESS,
-		DONE;
-	}
+	override val ID: Byte = 1
 
 	private var logger: Logger = LoggingUtil.getLogger(DIFFIE_HELLMAN)
-	private var secret = ByteArray(0)
+	private var sessionHash: MessageDigest? = null
 	private var keyAgreement: KeyAgreement? = null
-	private var keyPairGenerator: KeyPairGenerator? = null
+
 	var publicKey: PublicKey? = null
 		private set
 
-	// 0=No Handshake; 1=Doing Handshake; 2=Done Handshake;
-	private var handshakeState = UNINITIALIZED
-	private fun newKey(vararg data: Any) {
-		return try {
-			if (!doingHandshake) handshakeState = IN_PROGRESS
-			val keyAgreement: KeyAgreement = KeyAgreement.getInstance("X25519")
-			val keyPairGenerator: KeyPairGenerator = KeyPairGenerator.getInstance("XDH")
-			if (System.getProperty("debug") == "true") println("A")
-			keyPairGenerator.initialize(NamedParameterSpec("X25519"))
-			if (System.getProperty("debug") == "true") println("B")
-			val keyPair = keyPairGenerator.generateKeyPair()
-			if (System.getProperty("debug") == "true") println("C")
-			keyAgreement.init(keyPair.private)
-			if (System.getProperty("debug") == "true") println("D")
-			this.keyAgreement = keyAgreement
-			this.keyPairGenerator = keyPairGenerator
-			publicKey = keyPair.public
-		} catch (e: InvalidKeyException) {
-			logger.log(Level.WARNING, DIFFIE_HELLMAN, e)
-			if (data.isEmpty()) newKey(1) else newKey(data[0] as Int + 1)
-		} catch (e: NoSuchAlgorithmException) {
-			logger.log(Level.WARNING, DIFFIE_HELLMAN, e)
-			if (data.isEmpty()) newKey(1) else newKey(data[0] as Int + 1)
-		}
-	}
-
-	fun doPhase(key: PublicKey, lastPhase: Boolean) {
+	/**
+	 * Produces an output only if the handshake gets initialized during this function call
+	 */
+	fun doPhase(keyData: ByteArray, lastPhase: Boolean): ByteArray? {
 		val keyAgreement = keyAgreement
-		if (keyAgreement == null) {
-			logger.log(Level.WARNING, DIFFIE_HELLMAN, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
-			return
+		val sessionHash = sessionHash
+		val result = if (!doingHandshake) {
+			startHandshake()
+		} else {
+			ByteArray(0)
+		}
+		if (keyAgreement == null || sessionHash == null) {
+			logger.log(WARNING, DIFFIE_HELLMAN, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
+			reset()
+			return null
 		}
 		try {
+			sessionHash.update(keyData)
+			val kf = KeyFactory.getInstance("X25519")
+			val key = kf.generatePublic(X509EncodedKeySpec(keyData))
 			keyAgreement.doPhase(key, lastPhase)
 			if (lastPhase) {
-				secret = keyAgreement.generateSecret()
 				handshakeState = DONE
 			}
+			return result
+				.also { sessionHash.update(it) }
 		} catch (e: InvalidKeyException) {
-			logger.log(Level.WARNING, DIFFIE_HELLMAN, e)
+			logger.log(WARNING, DIFFIE_HELLMAN, e)
+			reset()
 		} catch (e: IllegalStateException) {
-			logger.log(Level.WARNING, DIFFIE_HELLMAN, e)
+			logger.log(WARNING, DIFFIE_HELLMAN, e)
+			reset()
 		}
+		return null
 	}
 
-	fun getSecret(): ByteArray? {
-		return if (handshakeDone) secret else null
+	override fun doPhase(data: ByteArray): ByteArray? {
+		return doPhase(data, true)
 	}
 
-	val doingHandshake: Boolean
-		get() = handshakeState == IN_PROGRESS
-	val handshakeDone: Boolean
-		get() = handshakeState == DONE
+	override fun getSecret(data: ByteArray): ByteArray? {
+		return if (handshakeDone) {
+			// TODO use hkdf
+			val sessionHash = sessionHash
+			val secret = keyAgreement?.generateSecret()
+			if (sessionHash == null || secret == null) {
+				logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
+				reset()
+				return null
+			}
+			val kdf = KDF.getInstance("HKDF-SHA256")
+			val spec = HKDFParameterSpec.ofExtract().addIKM(secret).addSalt(sessionHash.digest()).extractOnly()
+			kdf.deriveData(spec)
+		} else null
+	}
 
-	fun startHandshake() {
+	override fun startHandshake(): ByteArray? {
 		if (!doingHandshake) {
-			newKey()
+			try {
+				handshakeState = IN_PROGRESS
+				if (sessionHash == null) {
+					sessionHash = MessageDigest.getInstance("SHA-256")
+				}
+				val keyAgreement: KeyAgreement = KeyAgreement.getInstance("X25519")
+				val keyPairGenerator: KeyPairGenerator = KeyPairGenerator.getInstance("XDH")
+				if (System.getProperty("debug") == "true") println("A")
+				keyPairGenerator.initialize(NamedParameterSpec("X25519"))
+				if (System.getProperty("debug") == "true") println("B")
+				val keyPair = keyPairGenerator.generateKeyPair()
+				if (System.getProperty("debug") == "true") println("C")
+				keyAgreement.init(keyPair.private)
+				if (System.getProperty("debug") == "true") println("D")
+				this.keyAgreement = keyAgreement
+				publicKey = keyPair.public
+				val pubKeyEnc = keyPair.public.encoded
+				return allocateByteBuffer(pubKeyEnc.packingSizeWithLength)
+					.putByteArrayWithLength(pubKeyEnc)
+					.array()
+					.also { sessionHash!!.update(it) }
+			} catch (e: InvalidKeyException) {
+				logger.log(SEVERE, DIFFIE_HELLMAN, e)
+				reset()
+			} catch (e: NoSuchAlgorithmException) {
+				logger.log(SEVERE, DIFFIE_HELLMAN, e)
+				reset()
+			}
 		}
+		return null
+	}
+
+	override fun updateAdditionalAuthenticatedData(data: ByteArray) {
+		if (sessionHash == null) {
+			sessionHash = MessageDigest.getInstance("SHA-256")
+		}
+		sessionHash!!.update(data)
+	}
+
+	override fun reset() {
+		handshakeState = UNINITIALIZED
+		sessionHash = null
+		keyAgreement = null
+		publicKey = null
 	}
 
 	companion object {
