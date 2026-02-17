@@ -1,9 +1,11 @@
 @file:JvmName("EncryptionTest")
 package com.sterndu.encryption
 
+import com.sterndu.multicore.LoggingUtil
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.lang.Thread.sleep
 import java.net.InetSocketAddress
 import java.nio.channels.SocketChannel
 import java.nio.file.Files
@@ -35,6 +37,9 @@ object EncryptionTest {
 	)
 	@JvmStatic
 	fun main(args: Array<String>) {
+		LoggingUtil.setLogToFile()
+		val logger = LoggingUtil.getLogger("Test")
+		logger.warning("Test started")
 		val f = File("./ff.txt.enc")
 		val password = "FFSSecurePasswordXDD"
 		val spec: KeySpec = PBEKeySpec(
@@ -66,6 +71,8 @@ object EncryptionTest {
 			finishConnect()
 
 		}
+
+		sleep(15000)
 
 	}
 }
