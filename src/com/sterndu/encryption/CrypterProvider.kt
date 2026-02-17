@@ -39,7 +39,7 @@ object CrypterProvider {
 			it[10] = {
 				SymmetricIvCrypter(
 					"AES_256/GCM/NoPadding",
-					"",
+					"AES",
 					Int.MAX_VALUE.toUInt(), // Actual maximum is 2^32 but to be safe we use 2^31-1 instead
 					2.0.pow(35).toULong(), // 32 GiB b/c 64 GiB is the maximum
 					32,
