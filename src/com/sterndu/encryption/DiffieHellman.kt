@@ -16,10 +16,10 @@ import javax.crypto.spec.HKDFParameterSpec
 
 class DiffieHellman: KeyExchange() {
 
-	override val ID: Byte = 1
+	override val id: Byte = 1
 
 	private var logger: Logger = LoggingUtil.getLogger(DIFFIE_HELLMAN)
-	private var sessionHash: MessageDigest? = null
+	private var sessionHash: MessageDigest = MessageDigest.getInstance("SHA-256")
 	private var keyAgreement: KeyAgreement? = null
 
 	var publicKey: PublicKey? = null
@@ -30,10 +30,7 @@ class DiffieHellman: KeyExchange() {
 	 */
 	fun doPhase(keyData: ByteArray, lastPhase: Boolean, aad: ByteArray = ByteArray(0)): ByteArray? {
 		try {
-			if (sessionHash == null) {
-				sessionHash = MessageDigest.getInstance("SHA-256")
-			}
-			val sessionHash = sessionHash ?: return null
+            val sessionHash = sessionHash
 			sessionHash.update(keyData)
 			updateAdditionalAuthenticatedData(aad)
 			val result = if (!doingHandshake) {
@@ -44,7 +41,7 @@ class DiffieHellman: KeyExchange() {
 			val keyAgreement = keyAgreement
 
 			if (keyAgreement == null) {
-				logger.log(WARNING, DIFFIE_HELLMAN, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
+				logger.log(WARNING, DIFFIE_HELLMAN, Error(NOT_INITIALIZED_ERROR_MESSAGE))
 				reset()
 				return null
 			}
@@ -74,8 +71,8 @@ class DiffieHellman: KeyExchange() {
 		return if (handshakeDone) {
 			val sessionHash = sessionHash
 			val secret = keyAgreement?.generateSecret()
-			if (sessionHash == null || secret == null) {
-				logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
+			if (secret == null) {
+				logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, Error(NOT_INITIALIZED_ERROR_MESSAGE))
 				reset()
 				return null
 			}
@@ -89,10 +86,7 @@ class DiffieHellman: KeyExchange() {
 		if (!doingHandshake) {
 			try {
 				handshakeState = IN_PROGRESS
-				if (sessionHash == null) {
-					sessionHash = MessageDigest.getInstance("SHA-256")
-				}
-				val keyAgreement: KeyAgreement = KeyAgreement.getInstance("X25519")
+                val keyAgreement: KeyAgreement = KeyAgreement.getInstance("X25519")
 				val keyPairGenerator: KeyPairGenerator = KeyPairGenerator.getInstance("XDH")
 				if (System.getProperty("debug") == "true") println("A")
 				keyPairGenerator.initialize(NamedParameterSpec("X25519"))
@@ -107,7 +101,7 @@ class DiffieHellman: KeyExchange() {
 				return allocateByteBuffer(pubKeyEnc.packingSize)
 					.put(pubKeyEnc)
 					.array()
-					.also { sessionHash!!.update(it) }
+					.also { sessionHash.update(it) }
 			} catch (e: InvalidKeyException) {
 				logger.log(SEVERE, DIFFIE_HELLMAN, e)
 				reset()
@@ -120,20 +114,19 @@ class DiffieHellman: KeyExchange() {
 	}
 
 	override fun updateAdditionalAuthenticatedData(data: ByteArray) {
-		if (sessionHash == null) {
-			sessionHash = MessageDigest.getInstance("SHA-256")
-		}
-		sessionHash!!.update(data)
+        sessionHash.update(data)
 	}
 
 	override fun reset() {
 		handshakeState = UNINITIALIZED
-		sessionHash = null
+		sessionHash.reset()
 		keyAgreement = null
 		publicKey = null
 	}
 
 	companion object {
 		const val DIFFIE_HELLMAN = "Diffie Hellman"
+
+		const val NOT_INITIALIZED_ERROR_MESSAGE = "Handshake wasn't started yet or rehandshake hasn't been properly started!"
 	}
 }

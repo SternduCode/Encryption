@@ -4,7 +4,7 @@ import com.sterndu.encryption.KeyExchange.HandshakeState.*
 
 abstract class KeyExchange {
 
-    abstract val ID: Byte
+    abstract val id: Byte
 
     enum class HandshakeState {
         UNINITIALIZED,

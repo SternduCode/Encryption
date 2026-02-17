@@ -15,20 +15,20 @@ import javax.crypto.KeyAgreement
 import javax.crypto.SecretKey
 import javax.crypto.spec.HKDFParameterSpec
 
-enum class KyberSecurityPerformanceBalance(val id: Int, val parameterSpecName: String, val ciphertextSize: Int) {
-    Performance(0, "ML-KEM-512", 768), Balanced(1, "ML-KEM-768", 1088), Security(2, "ML-KEM-1024", 1568)
+enum class KyberSecurityPerformanceBalance(val id: Int, val parameterSpecName: String) {
+    Performance(0, "ML-KEM-512"), Balanced(1, "ML-KEM-768"), Security(2, "ML-KEM-1024")
 }
 
 class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityPerformanceBalance): KeyExchange() {
 
-    override val ID: Byte = 2
+    override val id: Byte = 2
 
     private var logger: Logger = LoggingUtil.getLogger(DIFFIE_HELLMAN_WITH_KYBER)
     private var remoteSecretKyber: SecretKey? = null
     private var localSecretKyber: SecretKey? = null
     private var keyAgreementDH: KeyAgreement? = null
     private var decapsulatorKyber: KEM.Decapsulator? = null
-    private var sessionHash: MessageDigest? = null
+    private var sessionHash: MessageDigest = MessageDigest.getInstance("SHA-256")
     var publicKeyDH: PublicKey? = null
         private set
     var publicKeyKyber: PublicKey? = null
@@ -36,10 +36,6 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
 
     override fun doPhase(data: ByteArray, aad: ByteArray): ByteArray? {
         try {
-            if (sessionHash == null) {
-                sessionHash = MessageDigest.getInstance("SHA-256")
-            }
-            val sessionHash = sessionHash ?: return null
             sessionHash.update(data)
             updateAdditionalAuthenticatedData(aad)
 
@@ -48,15 +44,9 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
             } else {
                 ByteArray(0)
             }
-            if (result == null) {
-                logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
-                reset()
-                return null
-            }
             val keyAgreement = keyAgreementDH
-
-            if (keyAgreement == null) {
-                logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
+            if (result == null || keyAgreement == null) {
+                logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, Error(NOT_INITIALIZED_ERROR_MESSAGE))
                 reset()
                 return null
             }
@@ -84,7 +74,7 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
             if (kyberCiphertext != null) {
                 val decapsulatorKyber = decapsulatorKyber
                 if (decapsulatorKyber == null) {
-                    logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, Error("Handshake wasn't started yet or rehandshake hasn't been properly started!"))
+                    logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, Error(NOT_INITIALIZED_ERROR_MESSAGE))
                     reset()
                     return null
                 }
@@ -115,11 +105,11 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
         val sessionHash = sessionHash
         val dhSecret = keyAgreementDH?.generateSecret()
         val decapsulatorKyber = decapsulatorKyber
-        if (sessionHash == null || dhSecret == null || decapsulatorKyber == null) {
+        if (dhSecret == null || decapsulatorKyber == null) {
             logger.log(
                 WARNING,
                 DIFFIE_HELLMAN_WITH_KYBER,
-                Error("Handshake wasn't started yet or rehandshake hasn't been properly started!")
+                Error(NOT_INITIALIZED_ERROR_MESSAGE)
             )
             reset()
             return null
@@ -154,9 +144,6 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
         if (!doingHandshake) {
             try {
                 handshakeState = IN_PROGRESS
-                if (sessionHash == null) {
-                    sessionHash = MessageDigest.getInstance("SHA-256")
-                }
                 val keyAgreementDH: KeyAgreement = KeyAgreement.getInstance("X25519")
                 val keyPairGeneratorDH: KeyPairGenerator = KeyPairGenerator.getInstance("XDH")
                 val keyPairGeneratorKyber: KeyPairGenerator = KeyPairGenerator.getInstance("ML-KEM")
@@ -180,7 +167,7 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
                     .putByteArrayWithLength(pubKeyDHEnc)
                     .putByteArrayWithLength(pubKeyKyberEnc)
                     .array()
-                    .also { sessionHash!!.update(it) }
+                    .also { sessionHash.update(it) }
             } catch (e: InvalidKeyException) {
                 logger.log(WARNING, DIFFIE_HELLMAN_WITH_KYBER, e)
                 reset()
@@ -193,10 +180,7 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
     }
 
     override fun updateAdditionalAuthenticatedData(data: ByteArray) {
-        if (sessionHash == null) {
-            sessionHash = MessageDigest.getInstance("SHA-256")
-        }
-        sessionHash!!.update(data)
+        sessionHash.update(data)
     }
 
     override fun reset() {
@@ -204,7 +188,7 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
         localSecretKyber = null
         keyAgreementDH = null
         decapsulatorKyber = null
-        sessionHash = null
+        sessionHash.reset()
         publicKeyDH = null
         publicKeyKyber = null
         handshakeState = UNINITIALIZED
@@ -212,6 +196,8 @@ class DiffieHellmanWithKyber(val kyberSecurityPerformanceBalance: KyberSecurityP
 
     companion object {
         const val DIFFIE_HELLMAN_WITH_KYBER = "Diffie Hellman Kyber"
+
+        const val NOT_INITIALIZED_ERROR_MESSAGE = "Handshake wasn't started yet or rehandshake hasn't been properly started!"
     }
 
 }
