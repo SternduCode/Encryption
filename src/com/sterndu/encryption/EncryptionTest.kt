@@ -45,7 +45,7 @@ object EncryptionTest {
 		val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
 		val key = secretKeyFactory.generateSecret(spec).encoded
 		val crypter = CrypterProvider.getCrypterByCode(10)!!
-		crypter.makeKey(key)
+		crypter.makeKeys(key, true)
 		if (!f.exists()) {
 			f.createNewFile()
 			val data = crypter.encrypt("Hello World! FFS".toByteArray(Charsets.UTF_8)) { ByteArray(0) }
@@ -54,6 +54,7 @@ object EncryptionTest {
 			fos.close()
 		}
 		var data = Files.readAllBytes(f.toPath())
+		crypter.makeKeys(key, false)
 		data = crypter.decrypt(data) { ByteArray(0) }
 		println(data.size)
 		println(data.contentToString())

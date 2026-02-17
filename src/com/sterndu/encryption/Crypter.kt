@@ -10,13 +10,12 @@ abstract class Crypter protected constructor(val algorithm: String, val maxEncry
 
 	protected val logger = LoggingUtil.getLogger("Crypter $algorithm")
 
-	var cipher: Cipher
-		protected set
+	val cipherEncryption: Cipher = Cipher.getInstance(algorithm)
+    val cipherDecryption: Cipher = Cipher.getInstance(algorithm)
 
-	var key: Key? = null
+    var keyEncryption: Key? = null
 		protected set
-
-	var secondaryKey: Key? = null
+	var keyDecryption: Key? = null
 		protected set
 
 	var encryptions = 0u
@@ -28,22 +27,20 @@ abstract class Crypter protected constructor(val algorithm: String, val maxEncry
 	var encryptedData = 0UL
 		protected set
 
-	open fun getSecondKeySize(): Int = 0
+	var decryptedData = 0UL
+		protected set
 
-	init {
-		cipher = Cipher.getInstance(algorithm)
-	}
-
-	open fun shouldGetANewKey(): Boolean = encryptions >= maxEncryptions || decryptions >= maxEncryptions || encryptedData >= maxData
+    open fun shouldGetANewKey(): Boolean = encryptions >= maxEncryptions || decryptions >= maxEncryptions || encryptedData >= maxData || decryptedData >= maxData
 
 	abstract fun decrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray
 
 	abstract fun encrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray
 
 	@Throws(InvalidKeyException::class)
-	abstract fun makeKey(data: ByteArray)
+	abstract fun makeKeys(masterSecret: ByteArray, host: Boolean)
 
-	@Throws(InvalidKeyException::class)
-	open fun makeSecondaryKey(data: ByteArray) {}   // default implementation. As many algorithms (i.e. symmetric algorithms) don't need two keys,
-													// we leave it empty but still provide it, as it might be useful for hybrid encryption algorithms.
+	/**
+	 * Should return the exact size of the byte array returned by encrypt() for an input of the given size.
+	 */
+	abstract fun getOutputPacketSize(inputSize: Int): Int
 }
