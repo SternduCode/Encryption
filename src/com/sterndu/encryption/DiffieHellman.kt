@@ -78,7 +78,9 @@ class DiffieHellman: KeyExchange() {
 			}
 			val kdf = KDF.getInstance("HKDF-SHA256")
 			val spec = HKDFParameterSpec.ofExtract().addIKM(secret).addSalt(sessionHash.digest()).extractOnly()
-			kdf.deriveData(spec)
+			val masterSecret = kdf.deriveData(spec)
+			reset()
+			masterSecret
 		} else null
 	}
 
