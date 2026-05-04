@@ -26,6 +26,8 @@ open class SymmetricIvCrypter(
 
     private var ivPrefix: ByteArray = ByteArray(0)
 
+    private val random: SecureRandom = SecureRandom()
+
     @Synchronized
     override fun decrypt(data: ByteArray, aadData: Crypter.() -> ByteArray): ByteArray {
         if (keyDecryption != null) try {
@@ -104,7 +106,7 @@ open class SymmetricIvCrypter(
         keyEncryption = kdf.deriveKey(keyAlgorithm, specEncryption)
         keyDecryption = kdf.deriveKey(keyAlgorithm, specDecryption)
         ivPrefix = ByteArray(4).also {
-            SecureRandom().nextBytes(it)
+            random.nextBytes(it)
         }
         encryptions = 0u
         decryptions = 0u
